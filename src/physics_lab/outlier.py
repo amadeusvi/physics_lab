@@ -7,8 +7,12 @@ from .method import get_mean, get_std
 
 
 def _get_t_critical(n: int, alpha: float) -> float:
-    """t 分布临界值，自由度 n-2。"""
-    return t.ppf(q=1 - alpha / (2 * n), df=n - 2)
+    """t 分布临界值，自由度 n-2。
+
+    采用国内《大学物理实验》教材约定的单侧公式（显著性水平 alpha/n），
+    使临界值与教材附录的格拉布斯系数表一致。
+    """
+    return t.ppf(q=1 - alpha / n, df=n - 2)
 
 
 def _calculate_grub(n: int, alpha: float) -> float:
