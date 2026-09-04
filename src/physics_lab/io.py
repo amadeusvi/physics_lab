@@ -1,6 +1,11 @@
+from datetime import datetime
+from pathlib import Path
+
 import numpy as np
 
 _SEPARATORS = ("，", "、", "；", ";", "\u3000")
+
+REPORT_DIR = Path("reports")
 
 
 def print_welcome() -> None:
@@ -75,33 +80,55 @@ def print_report(
     mean_r: float,
     u_r: float,
     result: str,
-) -> None:
-    """打印完整的数据处理报告（含中间过程，保证透明性）。"""
+) -> str:
+    """打印完整的数据处理报告（含中间过程，保证透明性），并返回报告文本。"""
     line = "-" * 56
-    print()
-    print("=" * 56)
-    print(f"原始数据 (n={data_original.size}): {np.round(data_original, 6).tolist()}")
-    print(f"仪器误差: {ins_error}")
-    print(line)
-    print(f"Grubbs 检验（显著性水平 alpha={alpha}）:")
+    lines = [
+        "=" * 56,
+        f"原始数据 (n={data_original.size}): {np.round(data_original, 6).tolist()}",
+        f"仪器误差: {ins_error}",
+        line,
+        f"Grubbs 检验（显著性水平 alpha={alpha}）:",
+    ]
     if removed:
         for value, g_stat, g_crit in removed:
-            print(f"  剔除 {value:g}：G = {g_stat:.4f} > 临界值 {g_crit:.4f}")
+            lines.append(f"  剔除 {value:g}：G = {g_stat:.4f} > 临界值 {g_crit:.4f}")
     else:
-        print("  无异常值")
-    print(f"剔除后数据 (n={data_cleaned.size}): {np.round(data_cleaned, 6).tolist()}")
-    print(line)
-    print("统计量计算:")
-    print(f"  算术平均值 x_bar = {mean:.6f}")
-    print(f"  样本标准差 S     = {std:.6f}")
-    print(f"  A 类不确定度 u_A = S / sqrt(n)     = {ua:.6f}")
-    print(f"  B 类不确定度 u_B = delta / sqrt(3) = {ub:.6f}")
-    print(f"  合成不确定度 u_C = sqrt(u_A^2 + u_B^2) = {u:.6f}")
-    print(line)
-    print("修约（不确定度保留 1 位有效数字，只进不舍）:")
-    print(f"  u_C   = {u:.6f} -> {u_r:g}")
-    print(f"  x_bar = {mean:.6f} -> {mean_r:g}（末位对齐）")
-    print(line)
-    print(f"最终结果: x = {result}")
-    print("=" * 56)
+        lines.append("  无异常值")
+    lines += [
+        f"剔除后数据 (n={data_cleaned.size}): {np.round(data_cleaned, 6).tolist()}",
+        line,
+        "统计量计算:",
+        f"  算术平均值 x_bar = {mean:.6f}",
+        f"  样本标准差 S     = {std:.6f}",
+        f"  A 类不确定度 u_A = S / sqrt(n)     = {ua:.6f}",
+        f"  B 类不确定度 u_B = delta / sqrt(3) = {ub:.6f}",
+        f"  合成不确定度 u_C = sqrt(u_A^2 + u_B^2) = {u:.6f}",
+        line,
+        "修约（不确定度保留 1 位有效数字，只进不舍）:",
+        f"  u_C   = {u:.6f} -> {u_r:g}",
+        f"  x_bar = {mean:.6f} -> {mean_r:g}（末位对齐）",
+        line,
+        f"最终结果: x = {result}",
+        "=" * 56,
+    ]
+    text = "\n".join(lines)
+    print(text)
     print()
+    return text
+
+
+def save_report(text: str, filename: str = "") -> Path:
+    """将报告文本保存到专门的 reports 文件夹，返回保存路径。
+
+    filename 为空时使用带时间戳的默认文件名，自动补全 .txt 后缀。
+    """
+    name = filename.strip().replace("/", "_").replace("\\", "_").replace(" ", "_")
+    if not name:
+        name = datetime.now().strftime("report_%Y%m%d_%H%M%S")
+    if not name.lower().endswith(".txt"):
+        name += ".txt"
+    REPORT_DIR.mkdir(parents=True, exist_ok=True)
+    path = REPORT_DIR / name
+    path.write_text(text, encoding="utf-8")
+    return path.resolve()

@@ -26,6 +26,7 @@ from physics_lab.io import (
     input_positive_float,
     print_report,
     print_welcome,
+    save_report,
 )
 
 
@@ -50,7 +51,7 @@ def run() -> None:
         unit = input_optional_text()
         result = format_result(mean, u, unit)
 
-        print_report(
+        report_text = print_report(
             data_original=data,
             data_cleaned=data_cleaned,
             removed=removed,
@@ -66,6 +67,11 @@ def run() -> None:
             result=result,
         )
 
+        if input_confirm("是否保存本次报告？(y/n): "):
+            filename = input_optional_text("请输入文件名（回车使用默认名）: ")
+            path = save_report(report_text, filename)
+            print(f"报告已保存至: {path}")
+
         if not input_confirm("是否处理下一组数据？(y/n): "):
             break
     print("感谢使用，再见！")
@@ -78,6 +84,8 @@ def main() -> None:
         print("\n已退出。")
     except ValueError as exc:
         print(f"错误: {exc}")
+    except OSError as exc:
+        print(f"保存失败: {exc}")
 
 
 if __name__ == "__main__":

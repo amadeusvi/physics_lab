@@ -1,4 +1,4 @@
-from decimal import ROUND_CEILING, ROUND_HALF_UP, Decimal
+from decimal import ROUND_CEILING, ROUND_HALF_EVEN, Decimal
 from math import isfinite
 
 
@@ -20,7 +20,7 @@ def round_result(mean: float, u: float) -> tuple[float, float]:
     u_d = Decimal(str(round_uncertainty(u))).normalize()
     places = max(0, -u_d.as_tuple().exponent)
     q = Decimal(1).scaleb(-places)
-    mean_d = Decimal(str(mean)).quantize(q, rounding=ROUND_HALF_UP)
+    mean_d = Decimal(str(mean)).quantize(q, rounding=ROUND_HALF_EVEN)
     return float(mean_d), float(u_d.quantize(q))
 
 
