@@ -1,2 +1,4 @@
 numpy>=2.0
 scipy>=1.14
+sympy>=1.12
+pint>=0.23

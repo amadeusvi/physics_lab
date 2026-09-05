@@ -19,9 +19,11 @@ from physics_lab import (
     type_a,
     type_b,
 )
+from physics_lab.indirect import run_indirect
 from physics_lab.io import (
     input_confirm,
     input_data,
+    input_mode,
     input_optional_text,
     input_positive_float,
     print_report,
@@ -30,49 +32,56 @@ from physics_lab.io import (
 )
 
 
+def run_direct() -> None:
+    data = input_data()
+    ins_error = input_positive_float("请输入仪器误差: ")
+
+    if data.size >= 3:
+        data_cleaned, removed = grubbs_test(data, alpha=ALPHA)
+    else:
+        data_cleaned, removed = data, []
+        print("数据少于 3 个，跳过 Grubbs 检验。")
+
+    mean = get_mean(data_cleaned)
+    std = get_std(data_cleaned)
+    ua = type_a(data_cleaned)
+    ub = type_b(ins_error)
+    u = get_uncertainty(data_cleaned, ins_error)
+    mean_r, u_r = round_result(mean, u)
+    unit = input_optional_text()
+    result = format_result(mean, u, unit)
+
+    report_text = print_report(
+        data_original=data,
+        data_cleaned=data_cleaned,
+        removed=removed,
+        ins_error=ins_error,
+        alpha=ALPHA,
+        mean=mean,
+        std=std,
+        ua=ua,
+        ub=ub,
+        u=u,
+        mean_r=mean_r,
+        u_r=u_r,
+        result=result,
+    )
+
+    if input_confirm("是否保存本次报告？(y/n): "):
+        filename = input_optional_text("请输入文件名（回车使用默认名）: ")
+        path = save_report(report_text, filename)
+        print(f"报告已保存至: {path}")
+
+
 def run() -> None:
     print_welcome()
     while True:
-        data = input_data()
-        ins_error = input_positive_float("请输入仪器误差: ")
-
-        if data.size >= 3:
-            data_cleaned, removed = grubbs_test(data, alpha=ALPHA)
+        mode = input_mode()
+        if mode == "direct":
+            run_direct()
         else:
-            data_cleaned, removed = data, []
-            print("数据少于 3 个，跳过 Grubbs 检验。")
-
-        mean = get_mean(data_cleaned)
-        std = get_std(data_cleaned)
-        ua = type_a(data_cleaned)
-        ub = type_b(ins_error)
-        u = get_uncertainty(data_cleaned, ins_error)
-        mean_r, u_r = round_result(mean, u)
-        unit = input_optional_text()
-        result = format_result(mean, u, unit)
-
-        report_text = print_report(
-            data_original=data,
-            data_cleaned=data_cleaned,
-            removed=removed,
-            ins_error=ins_error,
-            alpha=ALPHA,
-            mean=mean,
-            std=std,
-            ua=ua,
-            ub=ub,
-            u=u,
-            mean_r=mean_r,
-            u_r=u_r,
-            result=result,
-        )
-
-        if input_confirm("是否保存本次报告？(y/n): "):
-            filename = input_optional_text("请输入文件名（回车使用默认名）: ")
-            path = save_report(report_text, filename)
-            print(f"报告已保存至: {path}")
-
-        if not input_confirm("是否处理下一组数据？(y/n): "):
+            run_indirect()
+        if not input_confirm("是否继续处理？(y/n): "):
             break
     print("感谢使用，再见！")
 
