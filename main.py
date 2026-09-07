@@ -19,6 +19,7 @@ from physics_lab import (
     type_a,
     type_b,
 )
+from physics_lab.graph import run_graph
 from physics_lab.indirect import run_indirect
 from physics_lab.io import (
     input_confirm,
@@ -79,8 +80,10 @@ def run() -> None:
         mode = input_mode()
         if mode == "direct":
             run_direct()
-        else:
+        elif mode == "indirect":
             run_indirect()
+        else:
+            run_graph()
         if not input_confirm("是否继续处理？(y/n): "):
             break
     print("感谢使用，再见！")

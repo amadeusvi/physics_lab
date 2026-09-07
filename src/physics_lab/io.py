@@ -15,18 +15,23 @@ def print_welcome() -> None:
     print("大学物理实验数据处理工具")
     print("直接测量法：均值 | 样本标准差 | Grubbs 检验 | 不确定度")
     print("间接测量法：公式解析 | 误差传递 | 单位换算 | 有效数字修约")
+    print("作图与线性拟合：最小二乘 | 图解法 | 线性回归")
     print("=" * 56)
 
 
 def input_mode() -> str:
-    """读取处理模式：1 直接测量，2 间接测量。"""
+    """读取处理模式：1 直接测量，2 间接测量，3 作图与线性拟合。"""
     while True:
-        raw = input("请选择处理模式：1) 直接测量法  2) 间接测量法: ").strip()
+        raw = input(
+            "请选择处理模式：1) 直接测量法  2) 间接测量法  3) 作图与线性拟合: "
+        ).strip()
         if raw == "1":
             return "direct"
         if raw == "2":
             return "indirect"
-        print("请输入 1 或 2。")
+        if raw == "3":
+            return "graph"
+        print("请输入 1、2 或 3。")
 
 
 def input_choice(prompt: str, options: list[str]) -> int:
@@ -206,6 +211,94 @@ def save_report(text: str, filename: str = "") -> Path:
     path = REPORT_DIR / name
     path.write_text(text, encoding="utf-8")
     return path.resolve()
+
+
+def print_fit_report(
+    x,
+    y,
+    fit,
+    x_label: str,
+    y_label: str,
+    x_unit: str,
+    y_unit: str,
+    title: str,
+    slope_unit: str,
+    figure_path,
+    method: str,
+    graphical=None,
+    marked_path=None,
+) -> str:
+    """打印作图与线性拟合的完整报告（含最小二乘过程与所选方法），并返回报告文本。"""
+    line = "-" * 56
+    x_name = x_label or "x"
+    y_name = y_label or "y"
+    x_head = f"x / {x_unit}" if x_unit else "x"
+    y_head = f"y / {y_unit}" if y_unit else "y"
+    n = fit.n
+    lines = [
+        "=" * 56,
+        "作图与线性拟合数据处理报告",
+        f"图名: {title or f'{y_name}-{x_name} 曲线'}",
+        line,
+        f"数据表 (n={n}):",
+        f"  {'编号':<4} {x_head:<14} {y_head}",
+    ]
+    for i in range(n):
+        lines.append(f"  {i + 1:<4} {x[i]:<14.6g} {y[i]:.6g}")
+    lines += [
+        line,
+        "最小二乘法（教材公式）:",
+        f"  x_bar = {fit.x_mean:.6g}    y_bar = {fit.y_mean:.6g}",
+        f"  Lxy = sum(xy)/n - x_bar*y_bar   = {fit.Lxy:.6g}",
+        f"  Lxx = sum(x^2)/n - x_bar^2      = {fit.Lxx:.6g}",
+        f"  Lyy = sum(y^2)/n - y_bar^2      = {fit.Lyy:.6g}",
+        f"  斜率     a = Lxy / Lxx          = {fit.a:.6g}"
+        + (f" {slope_unit}" if slope_unit else ""),
+        f"  截距     b = y_bar - a*x_bar    = {fit.b:.6g}"
+        + (f" {y_unit}" if y_unit else ""),
+        f"  相关系数 R = Lxy / sqrt(Lxx*Lyy) = {fit.R:.6g}",
+        line,
+    ]
+    if method == "graphical" and graphical is not None:
+        lines += [
+            "图解法求斜率与截距（两点式）:",
+            f"  在拟合直线两端取点（不宜取测量点）:",
+            f"    A{graphical.point_a}，B{graphical.point_b}",
+            f"  斜率 a = (y_B - y_A) / (x_B - x_A) = {graphical.slope:.6g}"
+            + (f" {slope_unit}" if slope_unit else ""),
+            f"  在直线上另取点 C{graphical.point_c}",
+            f"  截距 b = y_C - a*x_C = {graphical.intercept:.6g}"
+            + (f" {y_unit}" if y_unit else ""),
+            "  注意: 纵横坐标代表不同的物理量，不能用倾角正切求斜率。",
+            line,
+        ]
+    else:
+        if abs(fit.R) >= 0.95:
+            verdict = "x、y 线性关系良好，线性拟合合理"
+        elif abs(fit.R) >= 0.9:
+            verdict = "x、y 线性关系较好，线性拟合基本合理"
+        elif abs(fit.R) >= 0.5:
+            verdict = "x、y 存在一定线性相关性"
+        else:
+            verdict = "R 接近 0，x、y 不存在明显线性关系，不建议线性拟合"
+        lines += [
+            "线性回归结果:",
+            f"  斜率 a = {fit.a:.6g}" + (f" {slope_unit}" if slope_unit else ""),
+            f"  截距 b = {fit.b:.6g}" + (f" {y_unit}" if y_unit else ""),
+            f"  相关系数 R = {fit.R:.6g}",
+            f"  回归方程: {y_name} = {fit.a:.6g}*{x_name} + {fit.b:.6g}"
+            + (f" {y_unit}" if y_unit else ""),
+            f"  {verdict}。",
+            line,
+        ]
+    lines.append(f"拟合图已保存至: {figure_path}")
+    if marked_path is not None:
+        lines.append(f"标记取点图已保存至: {marked_path}")
+    lines.append("=" * 56)
+    text = "\n".join(lines)
+    print(text)
+    print()
+    return text
 
 
 def _variable_lines(var) -> list[str]:

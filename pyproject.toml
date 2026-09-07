@@ -5,13 +5,14 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "physics_lab"
 description = "this is a programe that computing data from physics experiment"
-version = "0.2.0"
+version = "0.3.0"
 requires-python = ">=3.10"
 dependencies = [
     "numpy",
     "scipy",
     "sympy>=1.12",
     "pint>=0.23",
+    "matplotlib>=3.8",
 ]
 
 [project.optional-dependencies]
